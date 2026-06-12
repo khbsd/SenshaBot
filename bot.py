@@ -1,24 +1,33 @@
+import asyncio
 import os
 
 import discord
+from discord import app_commands
 
-from storage_management import StorageManagement
 from helpers.emoji_parser import parse_emotes
+from storage_management import StorageManagement
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 
 class ModerationBot(discord.Client):
     def __init__(self, intents: discord.Intents) -> None:
+        super().__init__(intents=intents)
         # Changed to other prefix than "!" to avoid the bots fighting
         self.prefix = "="
         self.prefix_length = len(self.prefix)
         self.storage = StorageManagement()
+        self.tree = app_commands.CommandTree(self)
 
         # Example of adding a custom config file, see below imported class
         # from storage_management import ConfigManagement
         # self.config = ConfigManagement()
 
+        # commented these out because for some reason when 'bot' is used outside
+        # the 'if "__name__" == "__main__"' it stops being able to import
+        # the 'command_registry' and 'event_registry' modules
+        # neither of those should be necessary for simple command registration
+        """
         # Initialize event registry
         from event_registry import event_registry
 
@@ -40,6 +49,7 @@ class ModerationBot(discord.Client):
             "The bot has been initialized with the following commands: "
             + ", ".join(self.registry.get_command_names())
         )
+        """
 
         # Permissions for the muted role and for the default role
         self.muted_permissions = discord.PermissionOverwrite(
@@ -55,17 +65,18 @@ class ModerationBot(discord.Client):
         # Start the discord client
         discord.Client.__init__(self, intents=intents)
 
+    """
     async def event_template(self, *args, **kwargs) -> None:
-        """The template event function used to replicate event functions dynamically.
-        See event_registry.EventRegistry.register_events() where setattr() is used to add event handlers to this class
-        This basically allows us to write one cookie-cutter function instead of implementing the whole discord.py event API
-        """
+        #The template event function used to replicate event functions dynamically.
+        #See event_registry.EventRegistry.register_events() where setattr() is used to add event handlers to this class
+        #This basically allows us to write one cookie-cutter function instead of implementing the whole discord.py event API
         event_name = kwargs.get("event_name")
         event_handlers = self.event_registry.get_event_handlers(event_name)
         if event_handlers is not None:
             for event_handler in event_handlers:
                 handler = event_handler(self)
                 await handler.handle(*args, **kwargs)
+    """
 
     """ DISCORD CLIENT EVENTS START HERE (DEPRECATED, USE EVENT HANDLERS!) """
 
@@ -114,7 +125,9 @@ class ModerationBot(discord.Client):
 
         # Check if the muted_role_id exists in the settings
         if "muted_role_id" in self.storage.settings["guilds"][guild_id]:
-            muted_role_id = int(self.storage.settings["guilds"][guild_id]["muted_role_id"])
+            muted_role_id = int(
+                self.storage.settings["guilds"][guild_id]["muted_role_id"]
+            )
             role_test = discord.utils.get(guild.roles, id=muted_role_id)
         else:
             role_test = None
@@ -124,7 +137,6 @@ class ModerationBot(discord.Client):
             muted_role = await guild.create_role(name="muted")
             self.storage.settings["guilds"][guild_id]["muted_role_id"] = muted_role.id
             await self.storage.write_file_to_disk()
-
 
     async def add_muted_role_to_channels(self, guild: discord.Guild) -> None:
         guild_id = str(guild.id)
@@ -168,8 +180,15 @@ class ModerationBot(discord.Client):
             self.storage.settings["guilds"][guild_id]["log_channel_id"] = log_channel.id
             await self.storage.write_file_to_disk()
 
+    async def sync(self):
+        s = await self.tree.sync()
+        print(f"syncing {s.len()} discord chat commands")
+
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+global token
+global intents
+
 if __name__ == "__main__":
     # Read the token from a file and strip newlines (Fixes issues when running the bot on linux)
     try:
@@ -178,9 +197,20 @@ if __name__ == "__main__":
         quit("Please create a token.txt file and place your token in it!")
     if token is None:
         quit("Please create a token.txt file and place your token in it!")
-    intents = discord.Intents.default()
-    intents.members = True
-    intents.message_content = True
-    # Run the bot instance
-    bot = ModerationBot(intents)
-    bot.run(token)
+
+intents = discord.Intents.default()
+intents.members = True
+intents.message_content = True
+# Run the bot instance
+bot = ModerationBot(intents)
+bot.run(token)
+
+
+# push some slash commands to discord
+@app_commands.describe(message="beeboop")
+@bot.tree.command(name="uuid", description="get a beep")
+async def uuid(intr: discord.Interaction):
+    print("beepbooop command run")
+
+# sync the bot and client slash command registry
+asyncio.run(bot.sync())
