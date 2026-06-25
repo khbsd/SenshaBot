@@ -89,6 +89,11 @@ class MessageEvent(EventHandler):
                 )
                 return
 
+            aussie_yell = "AUSSIE AUSSIE AUSSIE"
+            if aussie_yell in message.content:
+                await message.reply("OI OI OI!!")
+                return
+
             # Initialize the emoji chain for this guild and channel
             self.initialize_chain_for_channel(guild_id, channel_id)
 
