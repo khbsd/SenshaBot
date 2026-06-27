@@ -22,6 +22,7 @@ from helpers.misc_functions import (
     is_valid_duration,
     parse_duration,
 )
+from helpers.random_roller import roller
 from helpers.userid_parser import parse_userid
 
 
@@ -62,64 +63,54 @@ class RollCommand(Command):
         async def roll_command(
             interaction: discord.Interaction,
             dice: str | None = None,
-            coin: str = "coin",
+            sassy: bool | None = False,
         ) -> None:
             response = ""
             roll = None
+            r = roller(is_sassy=sassy)
 
-            if coin:
-                roll = random.randint(1, 2)
-                if roll == 1:
-                    roll = "Heads"
-                else:
-                    roll = "Tails"
-            else:
-                match = re.fullmatch(r"(\d+)d(\d+)", str(dice))
+            r.get_dice(str(dice))
 
-                if not match:
-                    await interaction.response.send_message(
-                        "Use XdY Format! (2d6, 1d20)"
-                    )
-                    return
+            if not r.dice:
+                await interaction.response.send_message("Use XdY Format! (2d6, 1d20)")
+                return
 
-                num_dice = int(match.group(1))
-                dice_size = int(match.group(2))
-
-                if num_dice == 0 and dice_size == 0:
+            for die in r.dice:
+                if die.amount == 0 and die.sides == 0:
                     await interaction.response.send_message(
-                        "Why are you making me do this?"
+                        f"{die.name}: Why are you making me do this?"
                     )
                     return
-                if num_dice == 0:
-                    await interaction.response.send_message("Just.. why?")
+                if die.amount == 0:
+                    await interaction.response.send_message(f"{die.name} Just.. why?")
                     return
-                if num_dice < 0:
+                if die.amount < 0:
                     await interaction.response.send_message(
-                        "Are you trying make reality collapse into itself, rolling negative amount of dice?!"
+                        f"{die.name}: Are you trying make reality collapse into itself, rolling negative amount of dice?!"
                     )
                     return
-                elif num_dice > 100:
+                elif die.amount > 100:
                     await interaction.response.send_message(
-                        "These are far too many dice you are trying to roll here, 100 at maximum should suffice!"
+                        f"{die.name}: These are far too many dice you are trying to roll here, 100 at maximum should suffice!"
                     )
                     return
-                elif dice_size <= 0:
+                elif die.sides <= 0:
                     await interaction.response.send_message(
-                        "I don't know what you are rolling but its not dice."
+                        f"{die.name}: I don't know what you are rolling but its not dice."
                     )
                     return
-                elif dice_size == 1:
+                elif die.sides == 1:
                     await interaction.response.send_message(
-                        "Might as well just count how many dice you have."
+                        f"{die.name}: Might as well just count how many dice you have."
                     )
                     return
-                elif dice_size > 1000:
+                elif die.sides > 1000:
                     await interaction.response.send_message(
-                        "Anything above 1000 sides are far too much. Those are real chonkers, some real badonkas!"
+                        f"{die.name}: Anything above 1000 sides are far too much. Those are real chonkers, some real badonkas!"
                     )
                     return
 
-                roll = self.custom_roll(num_dice, dice_size)
+            roll = self.custom_roll(len(r.dice), dice_size)
 
             # reset counter on natural crits to avoid back-to-back extremes by forced rolls
             if roll == 1 or roll == 20:
@@ -154,7 +145,7 @@ class RollCommand(Command):
                 pausecham = self.get_custom_emoji("pausecham")
 
                 # Different outcomes based on the roll
-                max_roll = num_dice * dice_size if dice else 20
+                max_roll = len(r.dice) * dice_size if dice else 20
 
                 if roll == 69:
                     response = "Nice"
@@ -190,12 +181,6 @@ class RollCommand(Command):
                     else:
                         response = f"{crown} nice roll, almost had it!"
 
-            # Send the final response
-            if coin:
-                await interaction.response.send_message(f"{roll}!")
-            else:
-                await interaction.response.send_message(f"You rolled a {roll}!")
-            if response:
                 await interaction.response.send_message(response)
 
         return [roll_command]
