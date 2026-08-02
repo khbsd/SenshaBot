@@ -26,7 +26,7 @@ TOTAL_STRINGS_NEGATIVE = [
 # 1) a consistent name scheme source of truth
 # 2) intuitive values to iterate through for indices,
 # ie dice[DieData.DICE.value] for the zeroth index
-# 
+#
 # its clunky for the regex but it helps keep things consistent
 class DieData(Enum):
     DICE = 0
@@ -68,36 +68,29 @@ class roller:
 
     def get_roll_totals(self) -> None:
         for die in self.dice:
-            print(die.name)
             self.roll_totals.append(die.roll())
 
-    def get_formatted_total_strings(self) -> str:
+    def get_formatted_total_string(self) -> str:
         total_string = ""
         die_count = 0
         for total in self.roll_totals:
-            total_string += f"Roll {die_count + 1}: {total}"
             die = self.dice[die_count]
+            total_string += f"Roll {die_count + 1}, {die.name}: {total}"
             if self.sassy:
                 list = []
                 if total > (die.amount * die.sides) * 0.667:
                     list = TOTAL_STRINGS_POSITIVE
                 else:
                     list = TOTAL_STRINGS_NEGATIVE
-                    
+
                 string = list[secrets.randbelow(len(list))]
                 string = re.sub("result", str(total), string)
-                
+
                 total_string += "\n" + string
-                
+
             if die_count < len(self.roll_totals) - 1:
                 total_string += "\n"
-                
+
             die_count += 1
 
         return total_string
-
-
-r = roller(is_sassy=True)
-r.get_dice(test_msg)
-r.get_roll_totals()
-print(r.get_formatted_total_strings())
