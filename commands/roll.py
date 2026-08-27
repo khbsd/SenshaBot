@@ -30,19 +30,41 @@ class RollCommand(Command):
     def __init__(self, client_instance: ModerationBot) -> None:
         self.cmd = None
         self.client = client_instance
+
+    def get_slash_commands(self) -> list:
+        @app_commands.command(name="roll", description="roll dice")
+        async def roll_command(interaction: discord.Interaction, die: str) -> None:
+            r: roller = roller(True)
+            r.get_dice(die)
+            r.get_roll_totals()
+            await interaction.response.send_message(
+                f"yoooooooo im like. a wip lol but heres your totals:\n{r.get_formatted_total_string()}",
+                ephemeral=True,
+            )
+
+        return [roll_command]
+
+
+classes = [("RollCommand", RollCommand)]
+
+"""
+class RollCommandBak(Command):
+    def __init__(self, client_instance: ModerationBot) -> None:
+        self.cmd = None
+        self.client = client_instance
         self.storage = client_instance.storage
         self.usage = f"Usage: {self.client.prefix}roll"
         self.roll_counter = 0  # Counter to track the number of rolls
 
     def get_custom_emoji(self, name):
-        """Fetch the bot's custom emoji by name."""
+        #Fetch the bot's custom emoji by name.
         for emoji in self.client.emojis:
             if emoji.name == name:
                 return str(emoji)
         return f":{name}:"  # Fallback in case the emoji is not found
 
     def get_forced_roll(self):
-        """Force a roll of 1 or 20 based on a condition."""
+        #Force a roll of 1 or 20 based on a condition.
         # Alternate between forcing 1 or 20
         return 1 if self.roll_counter % 2 == 0 else 20
 
@@ -184,7 +206,4 @@ class RollCommand(Command):
                 await interaction.response.send_message(response)
 
         return [roll_command]
-
-
-# Collects a list of classes in the file
-classes = [("RollCommand", RollCommand)]
+"""
