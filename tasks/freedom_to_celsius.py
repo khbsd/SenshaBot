@@ -1,59 +1,10 @@
 import inspect
 import re
 import sys
-from enum import Enum
 
 import discord
 
 from bot import ModerationBot
-
-# enums
-# "E" for "enum" + first letter of unit type
-
-
-# distance
-class ED(Enum):
-    METER = 0
-    FOOT = 1
-
-
-# temperature
-class ET(Enum):
-    FAHRENHEIT = 0
-    CELSIUS = 1
-    KELVIN = 2
-
-
-class ESystem(Enum):
-    METRIC = 0
-    IMPERIAL = 1
-
-
-class Systems:
-    def __init__(self) -> None:
-        self.Metric = [
-            ED.METER,
-            ET.CELSIUS,
-            ET.KELVIN,
-        ]
-        self.Imperial = [ED.FOOT, ET.FAHRENHEIT]
-
-
-class unit:
-    def __init__(self, value: str = "") -> None:
-        self.original: ED | ET
-        self.system: ESystem
-
-    def get_system(self, value: str = "") -> ESystem:
-        if self.original in Systems().Metric:
-            return ESystem.METRIC
-        return ESystem.IMPERIAL
-
-
-class conversion:
-    def __init__(self, original: Enum, target: Enum) -> None:
-        self.original: Enum = ED.METER
-        self.target: Enum = ED.MILE
 
 
 class TemperatureConverter:
@@ -61,10 +12,10 @@ class TemperatureConverter:
         self.client = client_instance
         self.storage = client_instance.storage
 
-    def c_to_f(self, c):
+    def c_to_f(self, c) -> float:
         return (c * 1.8) + 32
 
-    def f_to_c(self, f):
+    def f_to_c(self, f) -> float:
         return (f - 32) / 1.8
 
     async def on_message(self, message: discord.Message):
